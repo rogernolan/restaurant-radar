@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Restaurant Radar every Monday evening
+
+[Timer]
+OnCalendar=Mon *-*-* 19:00:00
+Persistent=true
+Unit=restaurant-radar-run.service
+
+[Install]
+WantedBy=timers.target

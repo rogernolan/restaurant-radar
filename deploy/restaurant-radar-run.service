@@ -1,0 +1,9 @@
+[Unit]
+Description=Generate the Restaurant Radar weekly snapshot
+
+[Service]
+Type=oneshot
+WorkingDirectory=/home/rog/restaurant-radar
+Environment=PYTHONPATH=/home/rog/restaurant-radar/src
+EnvironmentFile=-/home/rog/restaurant-radar/.env
+ExecStart=/usr/bin/python3 -m restaurant_radar.cli --config /home/rog/restaurant-radar/config.toml run

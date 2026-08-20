@@ -1,0 +1,15 @@
+[Unit]
+Description=Restaurant Radar web feed
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/rog/restaurant-radar
+Environment=PYTHONPATH=/home/rog/restaurant-radar/src
+EnvironmentFile=-/home/rog/restaurant-radar/.env
+ExecStart=/usr/bin/python3 -m restaurant_radar.cli --config /home/rog/restaurant-radar/config.toml serve --host 0.0.0.0 --port 8765
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
