@@ -1,0 +1,16 @@
+centre = "TN26 2JY"
+radius_km = 50
+run_time = "19:00"
+timezone = "server"
+provider = "fixtures"
+
+low_volume_min_reviews = 10
+low_volume_max_reviews = 99
+low_volume_min_rating = 4.5
+
+established_min_reviews = 100
+improvement_window_days = 30
+improvement_min_rating_delta = 0.3
+
+max_places_results = 60
+database_path = "data/restaurant-radar.sqlite3"
