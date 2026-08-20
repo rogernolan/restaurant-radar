@@ -29,6 +29,7 @@ def test_fixture_provider_is_selected_without_an_api_key():
 
 
 def test_google_provider_maps_places_response_and_paginates():
+    requests = []
     responses = [
         {"results": [{"geometry": {"location": {"lat": 51.1, "lng": 0.7}}}]},
         {
@@ -38,6 +39,7 @@ def test_google_provider_maps_places_response_and_paginates():
                 "formattedAddress": "1 High Street",
                 "rating": 4.6,
                 "userRatingCount": 42,
+                "location": {"latitude": 51.1, "longitude": 0.7},
                 "websiteUri": "https://example.test",
                 "googleMapsUri": "https://maps.google.test/google-1",
             }],
@@ -47,6 +49,7 @@ def test_google_provider_maps_places_response_and_paginates():
     ]
 
     def opener(request):
+        requests.append(request)
         payload = responses.pop(0)
         return type("Response", (), {"read": lambda self: json.dumps(payload).encode()})()
 
@@ -55,6 +58,9 @@ def test_google_provider_maps_places_response_and_paginates():
     assert places[0].name == "The Test Kitchen"
     assert places[0].review_count == 42
     assert len(responses) == 0
+    search_body = json.loads(requests[1].data)
+    assert "locationBias" in search_body
+    assert "locationRestriction" not in search_body
 
 
 def test_google_provider_wraps_api_errors():

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 import json
+import math
 import os
 from typing import Callable, Mapping, Protocol
 from urllib.parse import quote
@@ -47,6 +48,7 @@ class GooglePlacesProvider:
             "places.userRatingCount",
             "places.websiteUri",
             "places.googleMapsUri",
+            "places.location",
             "nextPageToken",
         ]
     )
@@ -63,7 +65,7 @@ class GooglePlacesProvider:
             body: dict[str, object] = {
                 "textQuery": "restaurants",
                 "pageSize": min(20, max_results - len(places)),
-                "locationRestriction": {
+                "locationBias": {
                     "circle": {
                         "center": {"latitude": latitude, "longitude": longitude},
                         "radius": radius_km * 1000,
@@ -76,7 +78,7 @@ class GooglePlacesProvider:
             if page_token:
                 body["pageToken"] = page_token
             payload = self._json_request(self._search_url, body, method="POST")
-            places.extend(self._places_from_payload(payload))
+            places.extend(self._places_from_payload(payload, (latitude, longitude), radius_km))
             page_token = payload.get("nextPageToken")
             if not page_token or not payload.get("places"):
                 break
@@ -115,7 +117,7 @@ class GooglePlacesProvider:
         return payload
 
     @staticmethod
-    def _places_from_payload(payload: dict) -> list[Place]:
+    def _places_from_payload(payload: dict, centre: tuple[float, float], radius_km: int) -> list[Place]:
         places: list[Place] = []
         for raw in payload.get("places", []):
             try:
@@ -126,9 +128,24 @@ class GooglePlacesProvider:
                 review_count = int(raw["userRatingCount"])
             except (KeyError, TypeError, ValueError):
                 continue
+            location = raw.get("location") or {}
+            try:
+                if _distance_km(centre, (float(location["latitude"]), float(location["longitude"]))) > radius_km:
+                    continue
+            except (KeyError, TypeError, ValueError):
+                continue
             maps_url = raw.get("googleMapsUri") or f"https://www.google.com/maps/search/?api=1&query=Google&query_place_id={quote(place_id)}"
             places.append(Place(place_id, name, address, rating, review_count, raw.get("websiteUri"), maps_url))
         return places
+
+
+def _distance_km(first: tuple[float, float], second: tuple[float, float]) -> float:
+    latitude_1, longitude_1 = map(math.radians, first)
+    latitude_2, longitude_2 = map(math.radians, second)
+    delta_latitude = latitude_2 - latitude_1
+    delta_longitude = longitude_2 - longitude_1
+    haversine = math.sin(delta_latitude / 2) ** 2 + math.cos(latitude_1) * math.cos(latitude_2) * math.sin(delta_longitude / 2) ** 2
+    return 6371.0 * 2 * math.asin(math.sqrt(haversine))
 
 
 def provider_for(settings: Settings, env: Mapping[str, str] | None = None) -> PlaceProvider:
