@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from datetime import date
-import html
+from datetime import date, datetime, time, timezone
+from email.utils import format_datetime
 import xml.etree.ElementTree as ET
 
 from .models import Entry
@@ -29,6 +29,7 @@ def render_rss(weeks: list[tuple[date, list[Entry]]], base_url: str) -> str:
         ET.SubElement(item, "title").text = f"Rising stars — week of {week.isoformat()}"
         ET.SubElement(item, "link").text = f"{base_url}/weeks/{week.isoformat()}"
         ET.SubElement(item, "guid").text = f"{base_url}/weeks/{week.isoformat()}"
-        ET.SubElement(item, "pubDate").text = week.isoformat()
+        publication_time = datetime.combine(week, time(19), tzinfo=timezone.utc)
+        ET.SubElement(item, "pubDate").text = format_datetime(publication_time)
         ET.SubElement(item, "description").text = _description(entries)
     return ET.tostring(rss, encoding="unicode", xml_declaration=True)

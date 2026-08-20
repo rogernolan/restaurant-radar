@@ -1,4 +1,5 @@
 from datetime import date
+from email.utils import parsedate_to_datetime
 import xml.etree.ElementTree as ET
 
 from restaurant_radar.models import Entry, Place
@@ -15,6 +16,7 @@ def test_rss_contains_one_item_per_week_and_uses_maps_fallback():
     assert "A &amp; B" in feed
     assert "A & B" in item.findtext("description")
     assert "https://maps.example/p1" in item.findtext("description")
+    assert parsedate_to_datetime(item.findtext("pubDate")).date() == date(2026, 8, 17)
 
 
 def test_rss_prefers_website_and_has_stable_week_guid():
