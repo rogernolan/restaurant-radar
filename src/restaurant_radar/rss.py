@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, time, timezone
 from email.utils import format_datetime
+import html
 import xml.etree.ElementTree as ET
 
 from .models import Entry
@@ -11,9 +12,15 @@ def preferred_url(entry: Entry) -> str:
     return entry.place.website_url or entry.place.maps_url
 
 
+def _link(entry: Entry) -> str:
+    if entry.place.website_url:
+        return html.escape(entry.place.website_url)
+    return f'<a href="{html.escape(entry.place.maps_url, quote=True)}">Google Maps</a>'
+
+
 def _description(entries: list[Entry]) -> str:
     return "\n".join(
-        f"{entry.place.name} — {entry.place.address} — {entry.place.rating:.1f} stars ({entry.place.review_count} reviews) — {entry.category} — {preferred_url(entry)}"
+        f"{entry.place.name} — {entry.place.address} — {entry.place.rating:.1f} stars ({entry.place.review_count} reviews) — {entry.category} — {_link(entry)}"
         for entry in entries
     ) or "No qualifying restaurants this week."
 

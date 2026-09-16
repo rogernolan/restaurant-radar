@@ -7,7 +7,7 @@ Type=simple
 WorkingDirectory=/home/rog/restaurant-radar
 Environment=PYTHONPATH=/home/rog/restaurant-radar/src
 EnvironmentFile=-/home/rog/restaurant-radar/.env
-ExecStart=/usr/bin/python3 -m restaurant_radar.cli --config /home/rog/restaurant-radar/config.toml serve --host 0.0.0.0 --port 8765 --base-url http://restaurant-radar.local:8765
+ExecStart=/usr/bin/python3 -m restaurant_radar.cli --config /home/rog/restaurant-radar/config.toml serve --host 0.0.0.0 --port 8765 --base-url https://restaurants.hatbat.net
 Restart=on-failure
 RestartSec=5
 

@@ -15,7 +15,7 @@ def test_rss_contains_one_item_per_week_and_uses_maps_fallback():
     assert item.findtext("title") == "Rising stars — week of 2026-08-17"
     assert "A &amp; B" in feed
     assert "A & B" in item.findtext("description")
-    assert "https://maps.example/p1" in item.findtext("description")
+    assert '<a href="https://maps.example/p1">Google Maps</a>' in item.findtext("description")
     assert parsedate_to_datetime(item.findtext("pubDate")).date() == date(2026, 8, 17)
 
 
