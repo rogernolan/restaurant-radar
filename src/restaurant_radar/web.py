@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from http.server import BaseHTTPRequestHandler, HTTPServer
 import html
 import socketserver
@@ -7,17 +8,20 @@ import socketserver
 from .rss import preferred_url, render_rss
 
 
-def render_index(weeks) -> str:
-    sections = []
-    for week, entries in weeks:
-        items = "".join(
-            f'<li><a href="{html.escape(preferred_url(entry), quote=True)}">{html.escape(entry.place.name)}</a> — '
-            f'{html.escape(entry.place.address)} — {entry.place.rating:.1f} stars ({entry.place.review_count} reviews) — '
-            f'{html.escape(entry.category)}</li>'
-            for entry in entries
-        ) or "<li>No qualifying restaurants this week.</li>"
-        sections.append(f"<section><h2>Week of {week.isoformat()}</h2><ul>{items}</ul></section>")
-    body = "".join(sections) or "<p>No weekly runs yet.</p>"
+def _week_section(week, entries, link: bool) -> str:
+    items = "".join(
+        f'<li><a href="{html.escape(preferred_url(entry), quote=True)}">{html.escape(entry.place.name)}</a> — '
+        f'{html.escape(entry.place.address)} — {entry.place.rating:.1f} stars ({entry.place.review_count} reviews) — '
+        f'{html.escape(entry.category)}</li>'
+        for entry in entries
+    ) or "<li>No qualifying restaurants this week.</li>"
+    heading = f"Week of {week.isoformat()}"
+    if link:
+        heading = f'<a href="/weeks/{week.isoformat()}">{heading}</a>'
+    return f"<section><h2>{heading}</h2><ul>{items}</ul></section>"
+
+
+def _page(body: str) -> str:
     return (
         "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">"
         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">"
@@ -25,6 +29,15 @@ def render_index(weeks) -> str:
         "<h1>Restaurant Radar</h1><p>Weekly restaurant review signals.</p>"
         f"{body}</main></body></html>"
     )
+
+
+def render_index(weeks) -> str:
+    body = "".join(_week_section(week, entries, link=True) for week, entries in weeks) or "<p>No weekly runs yet.</p>"
+    return _page(body)
+
+
+def render_week(week, entries) -> str:
+    return _page(_week_section(week, entries, link=False))
 
 
 class RadarHandler(BaseHTTPRequestHandler):
@@ -39,6 +52,18 @@ class RadarHandler(BaseHTTPRequestHandler):
         if self.path == "/feed.xml":
             body = render_rss(self.server.store.all_entries(), self.server.base_url).encode()
             self._send(200, "application/rss+xml; charset=utf-8", body)
+            return
+        if self.path.startswith("/weeks/"):
+            try:
+                week = date.fromisoformat(self.path.removeprefix("/weeks/"))
+            except ValueError:
+                self._send(404, "text/plain; charset=utf-8", b"not found\n")
+                return
+            if week not in self.server.store.weeks():
+                self._send(404, "text/plain; charset=utf-8", b"not found\n")
+                return
+            body = render_week(week, self.server.store.entries_for_week(week)).encode()
+            self._send(200, "text/html; charset=utf-8", body)
             return
         self._send(404, "text/plain; charset=utf-8", b"not found\n")
 
