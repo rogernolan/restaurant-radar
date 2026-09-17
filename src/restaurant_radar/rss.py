@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from datetime import date, datetime, time, timezone
 from email.utils import format_datetime
-import html
 import xml.etree.ElementTree as ET
 
 from .models import Entry
@@ -12,17 +11,26 @@ def preferred_url(entry: Entry) -> str:
     return entry.place.website_url or entry.place.maps_url
 
 
-def _link(entry: Entry) -> str:
+def _link(entry: Entry) -> tuple[str, str]:
     if entry.place.website_url:
-        return html.escape(entry.place.website_url)
-    return f'<a href="{html.escape(entry.place.maps_url, quote=True)}">Google Maps</a>'
+        return entry.place.website_url, "Website"
+    return entry.place.maps_url, "Google Maps"
 
 
-def _description(entries: list[Entry]) -> str:
-    return "\n".join(
-        f"{entry.place.name} — {entry.place.address} — {entry.place.rating:.1f} stars ({entry.place.review_count} reviews) — {entry.category} — {_link(entry)}"
-        for entry in entries
-    ) or "No qualifying restaurants this week."
+def _description_element(entries: list[Entry]) -> ET.Element:
+    description = ET.Element("description")
+    if not entries:
+        ET.SubElement(description, "p").text = "No qualifying restaurants this week."
+        return description
+    for entry in entries:
+        paragraph = ET.SubElement(description, "p")
+        paragraph.text = (
+            f"{entry.place.name} — {entry.place.address} — {entry.place.rating:.1f} stars "
+            f"({entry.place.review_count} reviews) — {entry.category} — "
+        )
+        url, label = _link(entry)
+        ET.SubElement(paragraph, "a", href=url).text = label
+    return description
 
 
 def render_rss(weeks: list[tuple[date, list[Entry]]], base_url: str) -> str:
@@ -38,5 +46,5 @@ def render_rss(weeks: list[tuple[date, list[Entry]]], base_url: str) -> str:
         ET.SubElement(item, "guid").text = f"{base_url}/weeks/{week.isoformat()}"
         publication_time = datetime.combine(week, time(19), tzinfo=timezone.utc)
         ET.SubElement(item, "pubDate").text = format_datetime(publication_time)
-        ET.SubElement(item, "description").text = _description(entries)
+        item.append(_description_element(entries))
     return ET.tostring(rss, encoding="unicode", xml_declaration=True)
