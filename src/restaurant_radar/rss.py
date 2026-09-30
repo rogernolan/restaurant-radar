@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, time, timezone
 from email.utils import format_datetime
+import html
 import xml.etree.ElementTree as ET
 
 from .models import Entry
@@ -17,20 +18,21 @@ def _link(entry: Entry) -> tuple[str, str]:
     return entry.place.maps_url, "Google Maps"
 
 
-def _description_element(entries: list[Entry]) -> ET.Element:
-    description = ET.Element("description")
+def _description(entries: list[Entry]) -> str:
     if not entries:
-        ET.SubElement(description, "p").text = "No qualifying restaurants this week."
-        return description
+        return "<p>No qualifying restaurants this week.</p>"
+    paragraphs = []
     for entry in entries:
-        paragraph = ET.SubElement(description, "p")
-        paragraph.text = (
+        details = (
             f"{entry.place.name} — {entry.place.address} — {entry.place.rating:.1f} stars "
             f"({entry.place.review_count} reviews) — {entry.category} — "
         )
         url, label = _link(entry)
-        ET.SubElement(paragraph, "a", href=url).text = label
-    return description
+        paragraphs.append(
+            f'<p>{html.escape(details)}<a href="{html.escape(url, quote=True)}">'
+            f"{html.escape(label)}</a></p>"
+        )
+    return "".join(paragraphs)
 
 
 def render_rss(weeks: list[tuple[date, list[Entry]]], base_url: str) -> str:
@@ -46,5 +48,5 @@ def render_rss(weeks: list[tuple[date, list[Entry]]], base_url: str) -> str:
         ET.SubElement(item, "guid").text = f"{base_url}/weeks/{week.isoformat()}"
         publication_time = datetime.combine(week, time(19), tzinfo=timezone.utc)
         ET.SubElement(item, "pubDate").text = format_datetime(publication_time)
-        item.append(_description_element(entries))
+        ET.SubElement(item, "description").text = _description(entries)
     return ET.tostring(rss, encoding="unicode", xml_declaration=True)
