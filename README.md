@@ -2,8 +2,10 @@
 
 A deliberately small experiment that records weekly restaurant observations and publishes an RSS feed for two signals:
 
-- low-volume/high-score restaurants with 11–99 reviews and a rating of at least 4.5;
+- low-volume/high-score restaurants with 11–99 reviews and a rating of at least 4.7;
 - established restaurants with at least 100 reviews whose rating has improved by at least 0.3 over a 30-day window.
+
+The default search radius is 30 km around TN26 2JY.
 
 ## Local fixture mode
 
@@ -41,7 +43,7 @@ Discovery searches rectangles covering the configured radius, rather than taking
 one shortlist for the entire area. `search_cell_km` defaults to 20;
 `max_places_results` is the result limit **per rectangle**, capped at Google's 60.
 Results are deduplicated by place ID and filtered to the original circle.
-The default 50 km radius uses 25 rectangles and at most 75 Text Search requests
+The default 30 km radius uses nine rectangles and at most 27 Text Search requests
 per run, plus one geocoding request. A warning identifies rectangles that hit
 the limit; Google's ranked search still cannot guarantee complete coverage.
 

@@ -25,8 +25,9 @@ def place_with(*, rating: float = 4.0, review_count: int = 50) -> Place:
 
 
 def test_classify_low_volume_high_score():
-    place = place_with(review_count=11, rating=4.5)
+    place = place_with(review_count=11, rating=4.7)
     assert classify(place, date(2026, 8, 17), [], settings()) == "low-volume"
+    assert classify(place_with(review_count=11, rating=4.6), date(2026, 8, 17), [], settings()) is None
 
 
 def test_classify_established_improvement_uses_snapshot_at_least_30_days_old():

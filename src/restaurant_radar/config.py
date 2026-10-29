@@ -8,13 +8,13 @@ import tomllib
 @dataclass(frozen=True)
 class Settings:
     centre: str = "TN26 2JY"
-    radius_km: int = 50
+    radius_km: int = 30
     run_time: str = "19:00"
     timezone: str = "server"
     provider: str = "fixtures"
     low_volume_min_reviews: int = 10
     low_volume_max_reviews: int = 99
-    low_volume_min_rating: float = 4.5
+    low_volume_min_rating: float = 4.7
     established_min_reviews: int = 100
     improvement_window_days: int = 30
     improvement_min_rating_delta: float = 0.3
