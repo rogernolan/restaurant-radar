@@ -1,6 +1,8 @@
 from dataclasses import replace
 from datetime import date
 
+import pytest
+
 from restaurant_radar.classifier import classify
 from restaurant_radar.config import Settings
 from restaurant_radar.models import Observation, Place
@@ -23,8 +25,9 @@ def place_with(*, rating: float = 4.0, review_count: int = 50) -> Place:
 
 
 def test_classify_low_volume_high_score():
-    place = place_with(review_count=11, rating=4.5)
+    place = place_with(review_count=11, rating=4.7)
     assert classify(place, date(2026, 8, 17), [], settings()) == "low-volume"
+    assert classify(place_with(review_count=11, rating=4.6), date(2026, 8, 17), [], settings()) is None
 
 
 def test_classify_established_improvement_uses_snapshot_at_least_30_days_old():
@@ -44,3 +47,9 @@ def test_classify_omits_boundaries_and_non_improvement():
 def test_classify_does_not_use_snapshot_before_full_comparison_window():
     prior = [Observation(place_with(rating=4.0, review_count=120), date(2026, 7, 19))]
     assert classify(place_with(review_count=120, rating=4.4), date(2026, 8, 17), prior, settings()) is None
+
+
+@pytest.mark.parametrize("baseline,current,expected", [(4.5, 4.8, "improving"), (4.2, 4.5, "improving"), (4.5, 4.7, None)])
+def test_improvement_threshold_uses_decimal_star_ratings(baseline, current, expected):
+    prior = [Observation(place_with(rating=baseline, review_count=120), date(2026, 7, 13))]
+    assert classify(place_with(rating=current, review_count=140), date(2026, 8, 17), prior, settings()) == expected

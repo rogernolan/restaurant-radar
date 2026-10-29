@@ -56,11 +56,28 @@ class Store:
             ).fetchall()
         return [self._observation_from_row(row) for row in rows]
 
+    def known_place_ids(self, before: date) -> list[str]:
+        with self._connect() as connection:
+            rows = connection.execute(
+                "SELECT DISTINCT place_id FROM observations WHERE observed_on < ? ORDER BY place_id",
+                (before.isoformat(),),
+            ).fetchall()
+        return [row[0] for row in rows]
+
+    def previous_entry(self, place_id: str, before: date) -> Entry | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT * FROM entries WHERE place_id = ? AND run_date < ? ORDER BY run_date DESC LIMIT 1",
+                (place_id, before.isoformat()),
+            ).fetchone()
+        return self._entry_from_row(row) if row else None
+
     def save_week(self, run_date: date, observations: list[Observation], entries: list[Entry]) -> None:
         run_value = run_date.isoformat()
         with self._connect() as connection:
             connection.execute("DELETE FROM entries WHERE run_date = ?", (run_value,))
             connection.execute("DELETE FROM weekly_runs WHERE run_date = ?", (run_value,))
+            connection.execute("DELETE FROM observations WHERE observed_on = ?", (run_value,))
             connection.execute("INSERT INTO weekly_runs(run_date, status) VALUES (?, 'complete')", (run_value,))
             connection.executemany(
                 """

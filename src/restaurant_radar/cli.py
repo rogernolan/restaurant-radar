@@ -24,7 +24,10 @@ def _run_week(settings: Settings, run_date: date) -> int:
     if isinstance(provider, FixtureProvider):
         places = provider.for_week(run_date)
     else:
-        places = provider.search(settings.centre, settings.radius_km, settings.max_places_results)
+        places = provider.search(
+            settings.centre, settings.radius_km, settings.max_places_results,
+            known_place_ids=store.known_place_ids(run_date),
+        )
     observations = [Observation(place, run_date) for place in places]
     entries = []
     for observation in observations:
@@ -35,9 +38,11 @@ def _run_week(settings: Settings, run_date: date) -> int:
             settings,
         )
         if category:
-            entries.append(Entry(observation.place, category, run_date))
+            previous = store.previous_entry(observation.place.place_id, run_date)
+            if previous is None or (previous.category, previous.place.rating) != (category, observation.place.rating):
+                entries.append(Entry(observation.place, category, run_date))
     store.save_week(run_date, observations, entries)
-    print(f"{run_date.isoformat()}: saved {len(entries)} qualifying restaurants")
+    print(f"{run_date.isoformat()}: observed {len(observations)} restaurants; saved {len(entries)} new or changed qualifying restaurants")
     return 0
 
 

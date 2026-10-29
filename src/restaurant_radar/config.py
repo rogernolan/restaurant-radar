@@ -8,17 +8,18 @@ import tomllib
 @dataclass(frozen=True)
 class Settings:
     centre: str = "TN26 2JY"
-    radius_km: int = 50
+    radius_km: int = 30
     run_time: str = "19:00"
     timezone: str = "server"
     provider: str = "fixtures"
     low_volume_min_reviews: int = 10
     low_volume_max_reviews: int = 99
-    low_volume_min_rating: float = 4.5
+    low_volume_min_rating: float = 4.7
     established_min_reviews: int = 100
     improvement_window_days: int = 30
     improvement_min_rating_delta: float = 0.3
     max_places_results: int = 60
+    search_cell_km: int = 20
     database_path: str = "data/restaurant-radar.sqlite3"
 
     def validate(self) -> None:
@@ -26,6 +27,8 @@ class Settings:
             raise ValueError("centre must not be empty")
         if self.radius_km <= 0 or self.max_places_results <= 0:
             raise ValueError("radius and max places results must be positive")
+        if self.search_cell_km <= 0:
+            raise ValueError("search cell size must be positive")
         if not 0 <= self.low_volume_min_rating <= 5:
             raise ValueError("low-volume rating must be between 0 and 5")
         if self.low_volume_min_reviews < 0:
