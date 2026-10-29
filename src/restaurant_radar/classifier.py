@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from decimal import Decimal
 
 from .config import Settings
 from .models import Observation, Place
@@ -26,6 +27,7 @@ def classify(
     if not eligible:
         return None
     baseline = max(eligible, key=lambda observation: observation.observed_on)
-    if place.rating - baseline.place.rating >= settings.improvement_min_rating_delta:
+    delta = Decimal(str(place.rating)) - Decimal(str(baseline.place.rating))
+    if delta >= Decimal(str(settings.improvement_min_rating_delta)):
         return "improving"
     return None
